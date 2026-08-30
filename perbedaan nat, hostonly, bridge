@@ -1,0 +1,45 @@
+# 🌐 Ringkasan Network Mode Virtualisasi (Bridge, Host-Only, & NAT)
+
+Konstruksi jaringan pada platform virtualisasi (Proxmox VE, VirtualBox, VMware) menentukan bagaimana VM (Virtual Machine) berkomunikasi dengan Host, VM lain, dan jaringan luar (Internet).
+
+---
+
+## 📊 Tabel Perbandingan Singkat
+
+| Mode Jaringan | Keterangan Jangkauan | Akses ke Internet | Akses dari Host ke VM | Akses Antar VM | IP Segment yang Digunakan |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **Bridge** | Luas (Satu LAN dengan Host) | ✅ Ya | ✅ Ya | ✅ Ya | Sama dengan subnet LAN Host (misal: `192.168.1.x`) |
+| **Host-Only** | Terisolasi (Internal Host saja) | ❌ Tidak | ✅ Ya | ✅ Ya | Subnet adapter virtual host (misal: `192.168.56.x`) |
+| **NAT** | Keluar saja (Dibalik IP Host) | ✅ Ya | ❌ Tidak (Harus Port Forwarding) | ❌ Tidak (Beda VM beda NAT) | Subnet privat internal hypervisor (misal: `10.0.2.x`) |
+
+---
+
+## 📌 Penjelasan Detailed
+
+### 1. Bridge Mode (Bridged Networking)
+* **Konsep:** VM terhubung secara langsung ke *Physical Network Interface Card (NIC)* milik Host. VM dianggap sebagai perangkat independen yang sejajar dengan komputer fisik di jaringan LAN.
+* **Karakteristik Utama:**
+  * VM mendapatkan alokasi IP langsung dari Router utama (misal: Router Mikrotik / Modem ISP).
+  * Komputer fisik lain di LAN yang sama bisa mengakses VM secara langsung tanpa konfigurasi tambahan.
+* **Penggunaan Ideal:** Server produksi, Active Directory / Domain Controller, Web Server lokal yang ingin diakses oleh banyak komputer di LAN.
+
+### 2. Host-Only Mode
+* **Konsep:** Membuat jaringan virtual tertutup (*isolated network*) yang hanya menghubungkan VM dengan Host penampungnya. Tidak ada jalur transmisi data yang keluar dari interface fisik Host.
+* **Karakteristik Utama:**
+  * Sangat aman dari luar karena sama sekali tidak terhubung ke jaringan LAN fisik maupun Internet.
+  * Hanya VM dan Host fisik yang bisa saling berinteraksi.
+* **Penggunaan Ideal:** Lingkungan pengujian (*lab/sandbox*), simulasi jaringan terisolasi, server database yang tidak boleh tersentuh internet.
+
+### 3. NAT Mode (Network Address Translation)
+* **Konsep:** VM berada di balik sistem NAT milik Host hypervisor. Host bertindak sebagai "Router/Gateway" bagi VM.
+* **Karakteristik Utama:**
+  * VM bisa mengakses Internet atau jaringan luar (karena outbound traffic di-translate oleh Host).
+  * Perangkat luar maupun Host **tidak bisa** menginisiasi koneksi masuk (*inbound*) ke VM secara langsung, kecuali dikonfigurasi *Port Forwarding*.
+* **Penggunaan Ideal:** Default setup VM untuk browsing/download paket, environment testing client yang hanya butuh akses internet tanpa perlu diakses balik dari luar.
+
+---
+
+## 💡 Ringkasan Sederhana (TL;DR)
+* **Bridge** = VM kamu seolah-olah dicolokkan kabel LAN-nya langsung ke router yang sama dengan laptop/PC kamu.
+* **Host-Only** = VM kamu dan Laptop kamu terhubung pakai kabel LAN sendiri tanpa dicolok ke modem/router internet.
+* **NAT** = Laptop kamu jadi "Router Mikrotik" buat VM kamu.
